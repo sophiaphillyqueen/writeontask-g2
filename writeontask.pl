@@ -74,7 +74,21 @@ $maxbehind > 0 or die "--max must be a positive integer\n";
 $wordspermin > 0 or die "--wpm must be a positive number\n";
 $headstart >= 0 or die "--head must be a non-negative integer\n";
 
-system('mkdir','-p',$comdir);
+if ( system('mkdir','-p',$comdir) != 0 )
+{
+  die(
+    "Failed to create communications directory:\n: "
+     . $comdir . " :\n"
+  );
+}
+
+if ( system('chmod','0700',$comdir) != 0 )
+{
+  die(
+    "Failed to secure communications directory:\n: "
+     . $comdir . " :\n"
+  );
+}
 
 if ( @mesgs )
 {
@@ -351,9 +365,6 @@ sub compare_numbers_nat {
 sub shell_qt {
   my $lc_ret;
   my $lc_ech;
-  
-  # These back-end functions are called like methods
-  shift(@_);
   
   $lc_ret = ' ';
   foreach $lc_ech (@_)

@@ -1,0 +1,48 @@
+#!@PERL_PATH@
+use strict;
+use warnings;
+use File::Spec;
+
+# The primary user command selects the first alarm recording
+# and provides the implementation with its shared state directory.
+
+my $lc_libexecdir = '@LIBEXECDIR@';
+my $lc_datadir = '@DATADIR@';
+my $lc_statehome;
+my $lc_comdir;
+my $lc_util;
+my $lc_soundfile;
+
+# Follow the XDG state-directory convention on every platform.
+# An unset, empty, or relative XDG_STATE_HOME uses the HOME fallback.
+if ( defined($ENV{'XDG_STATE_HOME'})
+     && File::Spec->file_name_is_absolute($ENV{'XDG_STATE_HOME'}) )
+{
+  $lc_statehome = $ENV{'XDG_STATE_HOME'};
+} else {
+  if ( ! defined($ENV{'HOME'}) || $ENV{'HOME'} eq '' )
+  {
+    die "Cannot determine the state directory: HOME is not set.\n";
+  }
+  $lc_statehome = File::Spec->catdir($ENV{'HOME'},'.local','state');
+}
+
+$lc_comdir = File::Spec->catdir($lc_statehome,'writeontask-g2');
+$lc_util = File::Spec->catfile($lc_libexecdir,'writeontask-g2-util');
+$lc_soundfile = File::Spec->catfile(
+  $lc_datadir,'writeontask-g2','bell-sound-02.wav'
+);
+
+# The core invokes the compatibility utilities by command name,
+# so make its installed private-executable directory searchable.
+if ( defined($ENV{'PATH'}) && $ENV{'PATH'} ne '' )
+{
+  $ENV{'PATH'} = $lc_libexecdir . ':' . $ENV{'PATH'};
+} else {
+  $ENV{'PATH'} = $lc_libexecdir;
+}
+
+# Replace this wrapper with the core, preserving the user's arguments.
+exec { $lc_util } $lc_util, $lc_comdir, $lc_soundfile, @ARGV;
+die "Cannot execute $lc_util: $!\n";
+

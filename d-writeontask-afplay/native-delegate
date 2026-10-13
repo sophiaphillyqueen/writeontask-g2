@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Delegate audio playback to macOS's native afplay,
+# forwarding every argument unchanged.
+
+exec /usr/bin/afplay "$@"
+

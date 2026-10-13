@@ -1,0 +1,128 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use File::Spec;
+
+# Find the first executable named caffeinate on PATH.
+# Keep its full pathname for both inspection and execution.
+
+my $lc_dir;
+my $lc_candidate;
+my $lc_caffeinate;
+my $lc_probe;
+my $lc_probe_pid;
+my $lc_help;
+my $lc_probe_ok;
+my $lc_style;
+my $lc_arg;
+my $lc_seconds;
+my $lc_display;
+
+$lc_caffeinate = undef;
+foreach $lc_dir (split(/:/,($ENV{'PATH'} // ''),-1))
+{
+  if ( $lc_dir eq '' ) { $lc_dir = '.'; }
+  $lc_candidate = File::Spec->catfile($lc_dir,'caffeinate');
+
+  if ( -f $lc_candidate && -x $lc_candidate )
+  {
+    $lc_caffeinate = File::Spec->rel2abs($lc_candidate);
+    last;
+  }
+}
+
+if ( !defined($lc_caffeinate) )
+{
+  die "writeontask-caffeinate: caffeinate not found on PATH\n";
+}
+
+# Request non-inhibiting help text, capturing standard output
+# and standard error without involving a shell.
+
+$lc_probe_pid = open($lc_probe,'-|');
+
+if ( !defined($lc_probe_pid) )
+{
+  die "writeontask-caffeinate: cannot inspect $lc_caffeinate: $!\n";
+}
+
+if ( $lc_probe_pid == 0 )
+{
+  open(STDERR,'>&',STDOUT) or exit 127;
+  exec { $lc_caffeinate } $lc_caffeinate, '--help';
+  exit 127;
+}
+
+{
+  local $/;
+  $lc_help = <$lc_probe>;
+}
+
+$lc_probe_ok = close($lc_probe);
+
+if ( !$lc_probe_ok || !defined($lc_help) )
+{
+  die "writeontask-caffeinate: help probe failed for $lc_caffeinate\n";
+}
+
+# Recognize only the two supported interfaces.
+# Never guess when the implementation is unfamiliar.
+
+if ( $lc_help =~ /Inhibit desktop idleness for the duration of COMMAND/i
+     && $lc_help =~ /usage:\s*caffeinate\b/i )
+{
+  $lc_style = 'debian';
+} elsif ( $lc_help =~ /\[-dismu\]/i
+          && $lc_help =~ /\[-t\s+(?:seconds|timeout)\]/i ) {
+  $lc_style = 'maclike';
+} else {
+  die "writeontask-caffeinate: unrecognized implementation: $lc_caffeinate\n";
+}
+
+# The macOS-compatible implementation already understands
+# the requested arguments, so pass them through unchanged.
+
+if ( $lc_style eq 'maclike' )
+{
+  exec { $lc_caffeinate } $lc_caffeinate, @ARGV;
+  die "writeontask-caffeinate: cannot execute $lc_caffeinate: $!\n";
+}
+
+# The Debian implementation inhibits desktop idleness
+# while another command runs.
+#
+# Translate -t SECONDS -d into caffeinate sleep SECONDS.
+
+$lc_seconds = undef;
+$lc_display = 0;
+
+while ( @ARGV )
+{
+  $lc_arg = shift(@ARGV);
+
+  if ( $lc_arg eq '-d' )
+  {
+    $lc_display = 1;
+  } elsif ( $lc_arg eq '-t' ) {
+    if ( !@ARGV )
+    {
+      die "writeontask-caffeinate: -t requires a duration\n";
+    }
+
+    $lc_seconds = shift(@ARGV);
+  } else {
+    die "writeontask-caffeinate: unsupported argument: $lc_arg\n";
+  }
+}
+
+if ( !$lc_display || !defined($lc_seconds)
+     || $lc_seconds !~ /\A0*[1-9][0-9]*\z/ )
+{
+  die "writeontask-caffeinate: expected -d and -t with positive integer seconds\n";
+}
+
+# Execute the same binary that supplied the help text.
+
+exec { $lc_caffeinate } $lc_caffeinate, 'sleep', $lc_seconds;
+die "writeontask-caffeinate: cannot execute $lc_caffeinate: $!\n";
+

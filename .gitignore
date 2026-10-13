@@ -1,8 +1,28 @@
+# Build-generated project files; every file in here is disposable.
+/build/
 
-# ============================================
-# macOS metadata
-# ============================================
+# Distribution archives never belong in source control.
+*.tar
+*.gz
+*.tgz
 
+# Autoconf/Automake generated files in the source root.
+/configure
+/configure~
+/Makefile
+/Makefile.in
+/Makefile.in~
+/aclocal.m4
+/autom4te.cache/
+/config.guess
+/config.sub
+/install-sh
+/missing
+/config.log
+/config.status
+/config.cache
+
+# macOS metadata.
 .DS_Store
 ._*
 .AppleDouble/
@@ -13,91 +33,4 @@
 .TemporaryItems/
 .VolumeIcon.icns
 .apdisk
-
-# ============================================
-# Autotools generated files
-# ============================================
-
-/configure
-/Makefile.in
-/aclocal.m4
-/autom4te.cache/
-/config.h.in
-/install-sh
-/missing
-/compile
-/depcomp
-/test-driver
-/config.guess
-/config.sub
-/ar-lib
-/ylwrap
-/ltmain.sh
-
-# ============================================
-# Configuration results
-# ============================================
-
-Makefile
-config.log
-config.status
-config.cache
-config.h
-stamp-h[0-9]*
-
-# ============================================
-# Generated executables
-# ============================================
-
-/writeontask
-/writeontask-util
-/writeontask-afplay
-/writeontask-caffeinate
-
-# ============================================
-# Generated manpages
-# ============================================
-
-/writeontask.1
-/writeontask-msgs.7
-
-# ============================================
-# Build and distribution artifacts
-# ============================================
-
-/build/
-/_build/
-/.deps/
-/.libs/
-.dirstamp
-
-/writeontask-*.tar
-/writeontask-*.tar.*
-/writeontask-*.zip
-
-# ============================================
-# Test results
-# ============================================
-
-test-suite.log
-*.trs
-
-# ============================================
-# Runtime session files
-# ============================================
-
-/current-process.dat
-/criogen.json
-/mesg-*.txt
-
-# ============================================
-# Temporary files and editor backups
-# ============================================
-
-*~
-*.swp
-*.swo
-\#*\#
-*.orig
-*.rej
 

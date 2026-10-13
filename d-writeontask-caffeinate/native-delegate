@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Delegate sleep inhibition to macOS's native caffeinate,
+# forwarding every argument unchanged.
+
+exec /usr/bin/caffeinate "$@"
+
