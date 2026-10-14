@@ -71,7 +71,7 @@ $soundfile = shift @ARGV;
 my $tot_time = $headstart;
 
 $maxbehind > 0 or die "--max must be a positive integer\n";
-$wordspermin > 0 or die "--wpm must be a positive number\n";
+$wordspermin >= 0 or die "--wpm must be a non-negative number\n";
 $headstart >= 0 or die "--head must be a non-negative integer\n";
 
 if ( system('mkdir','-p',$comdir) != 0 )
@@ -198,9 +198,14 @@ sub alg_gendaround {
   print '[' . $curncount . ' @ ' . $wordspermin . 'wpm] ';
   print ' ' . secs_to_hms($lc_true_total);
 
-  $lc_min_ahd = (( $curncount - $actugoal ) / $wordspermin);
-  $lc_sec_ahd = int(($lc_min_ahd * 60)+ 0.5);
-  print ' (' . secs_to_hms($lc_sec_ahd) . ' ahd)';
+  if ( $wordspermin > 0 )
+  {
+    $lc_min_ahd = (( $curncount - $actugoal ) / $wordspermin);
+    $lc_sec_ahd = int(($lc_min_ahd * 60)+ 0.5);
+    print ' (' . secs_to_hms($lc_sec_ahd) . ' ahd)';
+  } else {
+    print ' (no countdown)';
+  }
   
   print " :\n";
   
@@ -240,6 +245,34 @@ sub resp_cut_file {
     print "    File: " . $file . " :\n";
 
     return 0;
+}
+
+sub resp_change_wpm {
+  my $lc_val; # Requested new WPM
+
+  $lc_val = $_[0];
+
+  # Reject anything that isn't numeric.
+  if ( $lc_val !~ /\A[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\z/ )
+  {
+    print "WPM change rejected: '$lc_val' is not a valid number.\n";
+    return;
+  }
+
+  # Negative WPM is not permitted.
+  if ( $lc_val < 0 )
+  {
+    print "WPM change rejected: " . $lc_val . " is negative; remaining at " . $wordspermin . " WPM.\n";
+    return;
+  }
+
+  # Account for elapsed time at the old WPM.
+  frc_update_progress();
+
+  # Apply the new WPM.
+  $wordspermin = $lc_val;
+  print "Words perminute adjusted to: " . $wordspermin . " :\n";
+  frc_make_criogenum({'clean' => 0,});
 }
 
 sub resp_do_sort {
@@ -756,14 +789,7 @@ sub this_one_mesg {
     return;
   }
   
-  if ( $lc_nom eq 'wpm' )
-  {
-    frc_update_progress();
-    $wordspermin = $lc_val;
-    print "Words perminute adjusted to: " . $wordspermin . " :\n";
-    frc_make_criogenum({'clean' => 0,});
-    return;
-  }
+  if ( $lc_nom eq 'wpm' ) { return resp_change_wpm($lc_val); }
   
   if ( $lc_nom eq 'pause' )
   {
