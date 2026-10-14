@@ -29,8 +29,10 @@ endif
 # ============================================
 
 dist_pkgdata_DATA = \
-  audio-res/bell-sound-01.wav \
-  audio-res/bell-sound-02.wav \
+  audio-res/bell-sound-0001.wav \
+  audio-res/bell-sound-0002.wav \
+  audio-res/bell-sound-0003.wav \
+  audio-res/bell-sound-0004.wav \
   audio-res/sound-credits.md
 
 

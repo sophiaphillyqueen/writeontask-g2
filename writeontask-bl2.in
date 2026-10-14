@@ -30,7 +30,7 @@ if ( defined($ENV{'XDG_STATE_HOME'})
 $lc_comdir = File::Spec->catdir($lc_statehome,'writeontask-g2');
 $lc_util = File::Spec->catfile($lc_libexecdir,'writeontask-g2-util');
 $lc_soundfile = File::Spec->catfile(
-  $lc_datadir,'writeontask-g2','bell-sound-02.wav'
+  $lc_datadir,'writeontask-g2','bell-sound-0004.wav'
 );
 
 # The core invokes the compatibility utilities by command name,
