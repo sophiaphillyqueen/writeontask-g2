@@ -1,26 +1,28 @@
-# ============================================
-# Public commands
-# ============================================
-
-nodist_bin_SCRIPTS = build/writeontask build/writeontask-bl2
-
 
 # ============================================
-# Private implementation and compatibility tools
+# Public commands and core utility
 # ============================================
 
-nodist_libexec_SCRIPTS = build/writeontask-g2-util
+nodist_bin_SCRIPTS = \
+  build/writeontask \
+  build/writeontask-bl2 \
+  build/writeontask-g2-util
+
+
+# ============================================
+# Compatibility utilities
+# ============================================
 
 if BUILD_MACOS_AFPLAY
-nodist_libexec_SCRIPTS += build/writeontask-afplay
+nodist_bin_SCRIPTS += build/writeontask-afplay
 endif
 
 if BUILD_NATIVE_CAFFEINATE
-nodist_libexec_SCRIPTS += build/writeontask-caffeinate
+nodist_bin_SCRIPTS += build/writeontask-caffeinate
 endif
 
 if BUILD_ADAPTIVE_CAFFEINATE
-nodist_libexec_SCRIPTS += build/writeontask-caffeinate
+nodist_bin_SCRIPTS += build/writeontask-caffeinate
 endif
 
 
@@ -71,7 +73,6 @@ build/writeontask: $(srcdir)/writeontask.in Makefile
 	$(MKDIR_P) build
 	sed \
 	  -e 's|@PERL_PATH@|$(PERL)|g' \
-	  -e 's|@LIBEXECDIR@|$(libexecdir)|g' \
 	  -e 's|@DATADIR@|$(datadir)|g' \
 	  $(srcdir)/writeontask.in > $@.tmp
 	chmod +x $@.tmp
@@ -81,7 +82,6 @@ build/writeontask-bl2: $(srcdir)/writeontask-bl2.in Makefile
 	$(MKDIR_P) build
 	sed \
 	  -e 's|@PERL_PATH@|$(PERL)|g' \
-	  -e 's|@LIBEXECDIR@|$(libexecdir)|g' \
 	  -e 's|@DATADIR@|$(datadir)|g' \
 	  $(srcdir)/writeontask-bl2.in > $@.tmp
 	chmod +x $@.tmp
@@ -89,7 +89,7 @@ build/writeontask-bl2: $(srcdir)/writeontask-bl2.in Makefile
 
 
 # ============================================
-# Generate the private implementation
+# Generate the core utility
 # ============================================
 
 build/writeontask-g2-util: $(srcdir)/writeontask.pl
@@ -151,8 +151,8 @@ build/writeontask-msgs.7: $(srcdir)/writeontask-msgs.md
 	$(PANDOC) --standalone --from=markdown --to=man \
 	  --output=$@ $(srcdir)/writeontask-msgs.md
 
-
 endif
+
 
 # ============================================
 # Basic build verification
@@ -178,18 +178,18 @@ check-local:
 quarantine_executables = \
   "$(DESTDIR)$(bindir)/writeontask" \
   "$(DESTDIR)$(bindir)/writeontask-bl2" \
-  "$(DESTDIR)$(libexecdir)/writeontask-g2-util"
+  "$(DESTDIR)$(bindir)/writeontask-g2-util"
 
 if BUILD_MACOS_AFPLAY
-quarantine_executables += "$(DESTDIR)$(libexecdir)/writeontask-afplay"
+quarantine_executables += "$(DESTDIR)$(bindir)/writeontask-afplay"
 endif
 
 if BUILD_NATIVE_CAFFEINATE
-quarantine_executables += "$(DESTDIR)$(libexecdir)/writeontask-caffeinate"
+quarantine_executables += "$(DESTDIR)$(bindir)/writeontask-caffeinate"
 endif
 
 if BUILD_ADAPTIVE_CAFFEINATE
-quarantine_executables += "$(DESTDIR)$(libexecdir)/writeontask-caffeinate"
+quarantine_executables += "$(DESTDIR)$(bindir)/writeontask-caffeinate"
 endif
 
 
@@ -238,6 +238,7 @@ CLEANFILES = \
 
 # Source distributions carry pre-generated manpages, which must
 # survive make clean even when Pandoc is not installed.
+
 if !HAVE_PREBUILT_MANPAGES
 CLEANFILES += build/writeontask.1 build/writeontask-msgs.7
 endif
