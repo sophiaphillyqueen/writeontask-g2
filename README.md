@@ -8,7 +8,7 @@ Features include adjustable writing speed and head start, multiple monitored fil
 
 ## Requirements
 
-The program requires Perl. Building requires Pandoc and `make`; bootstrapping a Git checkout also requires GNU Autoconf and GNU Automake.
+The program requires Perl. Building requires `make`. Pandoc is required when the generated manual pages are missing, as in a fresh Git checkout; source tarballs include the manual pages and do not require Pandoc to build. Bootstrapping a Git checkout also requires GNU Autoconf and GNU Automake.
 
 On macOS, the build prerequisites can be installed with Homebrew:
 
@@ -30,11 +30,11 @@ make check
 make install
 ```
 
-The installed commands are `$HOME/local/bin/writeontask` and `$HOME/local/bin/writeontask-bl2`. Include `$HOME/local/bin` in your `PATH`.
+The installed commands are `writeontask` and `writeontask-bl2`. Their installation directory is determined by `./configure` (the default `bindir` is `/usr/local/bin`). You can choose other installation paths using options such as `--prefix=DIR` or `--bindir=DIR`; see [BUILDING.md](BUILDING.md). Ensure the selected executable directory is in your `PATH`.
 
 This is an ordinary Autoconf/Automake installation. The Makefile automatically creates **one directory named `build/`** and places all generated program executables and manual pages there. You do not create or enter that directory yourself. Autotools configuration files and distribution archives remain in the repository root and are covered by `.gitignore`.
 
-When building from a source-distribution tarball, omit `autoreconf -fi`; the generated `configure` script is already included.
+When building from a source-distribution tarball, omit `autoreconf -fi`; the generated `configure` script and manual pages are already included. On such a build, Pandoc is optional: if available, `make` can refresh out-of-date manual pages; otherwise, it uses the supplied copies.
 
 ## Basic usage
 
@@ -84,7 +84,7 @@ Both public commands use the same session-state directory, so either can restore
 - [writeontask-msgs.md](writeontask-msgs.md) — Messages accepted by a running session.
 - [BUILDING.md](BUILDING.md) — Detailed build, installation, packaging, and cleanup instructions.
 
-The build converts the command-reference documents to Unix manual pages:
+When Pandoc is available, `make` generates or refreshes the Unix manual pages as needed; source tarballs include pre-generated manual pages. After installation, read them using:
 
 ```sh
 man 1 writeontask

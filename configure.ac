@@ -11,9 +11,20 @@ AC_PATH_PROG([PERL], [perl])
 AS_IF([test -z "$PERL"],
   [AC_MSG_ERROR([Perl is required to run writeontask-g2])])
 
+# Detect Pandoc whether or not pre-generated manual pages are available.
+# A source tarball contains both pages; a fresh Git checkout does not.
 AC_PATH_PROG([PANDOC], [pandoc])
-AS_IF([test -z "$PANDOC"],
-  [AC_MSG_ERROR([Pandoc is required to generate the manual pages])])
+
+prebuilt_manpages=no
+AS_IF([test -s "$srcdir/build/writeontask.1" &&
+       test -s "$srcdir/build/writeontask-msgs.7"],
+  [prebuilt_manpages=yes])
+
+AS_IF([test -z "$PANDOC" && test "x$prebuilt_manpages" != xyes],
+  [AC_MSG_ERROR([Pandoc is required unless both pre-generated manual pages are supplied])])
+
+AM_CONDITIONAL([HAVE_PANDOC], [test -n "$PANDOC"])
+AM_CONDITIONAL([HAVE_PREBUILT_MANPAGES], [test "x$prebuilt_manpages" = xyes])
 
 
 # Audio playback backend.

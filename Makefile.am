@@ -40,8 +40,8 @@ dist_pkgdata_DATA = \
 # Manual pages
 # ============================================
 
-nodist_man1_MANS = build/writeontask.1
-nodist_man7_MANS = build/writeontask-msgs.7
+dist_man1_MANS = build/writeontask.1
+dist_man7_MANS = build/writeontask-msgs.7
 
 
 # ============================================
@@ -139,6 +139,8 @@ endif
 # Generate manual pages using Pandoc
 # ============================================
 
+if HAVE_PANDOC
+
 build/writeontask.1: $(srcdir)/writeontask.md
 	$(MKDIR_P) build
 	$(PANDOC) --standalone --from=markdown --to=man \
@@ -150,6 +152,8 @@ build/writeontask-msgs.7: $(srcdir)/writeontask-msgs.md
 	  --output=$@ $(srcdir)/writeontask-msgs.md
 
 
+endif
+
 # ============================================
 # Basic build verification
 # ============================================
@@ -158,8 +162,8 @@ check-local:
 	$(PERL) -c $(srcdir)/writeontask.pl
 	$(PERL) -c build/writeontask
 	$(PERL) -c build/writeontask-bl2
-	test -s build/writeontask.1
-	test -s build/writeontask-msgs.7
+	test -s build/writeontask.1 || test -s $(srcdir)/build/writeontask.1
+	test -s build/writeontask-msgs.7 || test -s $(srcdir)/build/writeontask-msgs.7
 
 
 # ============================================
@@ -230,9 +234,13 @@ CLEANFILES = \
   build/writeontask-bl2 \
   build/writeontask-g2-util \
   build/writeontask-afplay \
-  build/writeontask-caffeinate \
-  build/writeontask.1 \
-  build/writeontask-msgs.7
+  build/writeontask-caffeinate
+
+# Source distributions carry pre-generated manpages, which must
+# survive make clean even when Pandoc is not installed.
+if !HAVE_PREBUILT_MANPAGES
+CLEANFILES += build/writeontask.1 build/writeontask-msgs.7
+endif
 
 
 # ============================================
