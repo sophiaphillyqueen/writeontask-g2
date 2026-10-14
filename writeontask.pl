@@ -459,6 +459,36 @@ sub extract_nat_token {
 
 
 
+sub frc_update_progress {
+  # This function updates the progress variables for the
+  # time progression --- regardless of whether the minimum
+  # elapsed time has arrived.
+  
+  my $lc_now; # The current moment
+  my $lc_elps; # Time elapsed since the last update
+  
+  # Make sure this doesn't collide with pauses:
+  ford_pause();
+  
+  $lc_now = agtm();
+  $lc_elps = ( $lc_now - $attime );
+  
+  # Now we don't want this to affect the initial head-start
+  # time.
+  if ( $lc_elps < 0 ) { return; }
+  
+  # And we now calculate the actual goal before the rest
+  # of the update
+  $actugoal = $wordgoal + ( $wordspermin * $lc_elps / 60 );
+  
+  # And now for the heart of the update
+  $tot_time += $lc_elps;
+  $attime = $lc_now;
+  $wordgoal = $actugoal;
+}
+
+
+
 sub raw_get_mappair {
   return [ time(), agtm() ];
 }
@@ -728,6 +758,7 @@ sub this_one_mesg {
   
   if ( $lc_nom eq 'wpm' )
   {
+    frc_update_progress();
     $wordspermin = $lc_val;
     print "Words perminute adjusted to: " . $wordspermin . " :\n";
     frc_make_criogenum({'clean' => 0,});
