@@ -24,7 +24,7 @@ Run these commands **from the repository root**:
 
 ```sh
 autoreconf -fi
-./configure --prefix="$HOME/local"
+./configure
 make
 make check
 make install
