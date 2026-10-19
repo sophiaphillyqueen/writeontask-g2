@@ -1,4 +1,3 @@
-
 # ============================================
 # Public commands and core utility
 # ============================================
@@ -167,13 +166,53 @@ check-local:
 
 
 # ============================================
+# Verify and repair every installed file
+# ============================================
+
+# Automake installs scripts as mode 755 and data/manpages as mode 644.
+# The verifier checks exact bytes, file type, and exact permission mode.
+# On failure, it removes the destination, reinstalls it once, and checks
+# again.  No temporary installation filenames are used.
+#
+# This shell function is shared by both installation hooks.
+
+install_file_verifier = \
+  check_installed_file () { \
+    test -f "$$2" && test ! -L "$$2" && \
+    cmp -s "$$1" "$$2" && \
+    test -n "$$(find "$$2" -prune -type f -perm "0$$3" -print)"; \
+  }; \
+  verify_installed_file () { \
+    if check_installed_file "$$1" "$$2" "$$3"; then return 0; fi; \
+    printf 'Installation verification failed; removing and reinstalling: %s\n' "$$2" >&2; \
+    lc_failure='Could not delete the defective destination'; \
+    if rm -f "$$2"; then \
+      lc_failure='Reinstallation command failed'; \
+      if test "$$3" = 755; then \
+        if $(INSTALL_SCRIPT) "$$1" "$$2"; then lc_failure=; fi; \
+      else \
+        if $(INSTALL_DATA) "$$1" "$$2"; then lc_failure=; fi; \
+      fi; \
+      if test -z "$$lc_failure"; then \
+        if check_installed_file "$$1" "$$2" "$$3"; then \
+          printf 'Reinstallation verified: %s\n' "$$2"; \
+          return 0; \
+        fi; \
+        lc_failure='Reinstalled file still fails content or permission verification'; \
+      fi; \
+    fi; \
+    printf '\n\nFATAL INSTALLATION ERROR: %s\nFile: %s\nSource: %s\n\n' \
+      "$$lc_failure" "$$2" "$$1" >&2; \
+    return 1; \
+  }
+
+
+# ============================================
 # macOS quarantine protection
 # ============================================
 
-# Include only executables actually selected for installation.
-# Quote every pathname to support installation paths with spaces.
-#
-# DESTDIR is included for staged/package installations.
+# Keep the original quarantine cleanup after executable verification.
+# Only selected macOS builds require xattr.
 
 quarantine_executables = \
   "$(DESTDIR)$(bindir)/writeontask" \
@@ -193,36 +232,73 @@ quarantine_executables += "$(DESTDIR)$(bindir)/writeontask-caffeinate"
 endif
 
 
-# Only macOS builds with quarantine protection enabled
-# receive this installation hook.
-#
-# Inspect each installed executable, remove its quarantine
-# attribute if present, and verify that it is absent afterward.
-#
-# An inspection or removal failure is an installation error.
-
-if MACOS_QUARANTINE_CLEANUP
+# ============================================
+# Check installed scripts after Automake installs them
+# ============================================
 
 install-exec-hook:
 	@set -e; \
+	$(install_file_verifier); \
+	for lc_file in $(nodist_bin_SCRIPTS); do \
+	  lc_source="$$lc_file"; \
+	  if test ! -f "$$lc_source"; then lc_source='$(srcdir)/'"$$lc_file"; fi; \
+	  lc_name=$${lc_file##*/}; \
+	  lc_name=$$(printf '%s\n' "$$lc_name" | sed '$(transform)'); \
+	  lc_dest='$(DESTDIR)$(bindir)/'"$$lc_name"; \
+	  verify_installed_file "$$lc_source" "$$lc_dest" 755; \
+	done
+
+
+if MACOS_QUARANTINE_CLEANUP
+
+# This recipe is added to the same install-exec-hook, after verification.
+	@set -e; \
 	for lc_file in $(quarantine_executables); do \
 	  if ! "$(XATTR)" -l "$$lc_file" >/dev/null 2>&1; then \
-	    echo "Cannot inspect extended attributes: $$lc_file" >&2; \
+	    printf '\n\nFATAL INSTALLATION ERROR: Cannot inspect extended attributes\nFile: %s\n\n' "$$lc_file" >&2; \
 	    exit 1; \
 	  fi; \
 	  if "$(XATTR)" -p com.apple.quarantine "$$lc_file" >/dev/null 2>&1; then \
 	    if ! "$(XATTR)" -d com.apple.quarantine "$$lc_file"; then \
-	      echo "Cannot remove quarantine: $$lc_file" >&2; \
+	      printf '\n\nFATAL INSTALLATION ERROR: Cannot remove quarantine\nFile: %s\n\n' "$$lc_file" >&2; \
 	      exit 1; \
 	    fi; \
 	  fi; \
 	  if "$(XATTR)" -p com.apple.quarantine "$$lc_file" >/dev/null 2>&1; then \
-	    echo "Quarantine still present: $$lc_file" >&2; \
+	    printf '\n\nFATAL INSTALLATION ERROR: Quarantine still present\nFile: %s\n\n' "$$lc_file" >&2; \
 	    exit 1; \
 	  fi; \
 	done
 
 endif
+
+
+# ============================================
+# Check installed data and manual pages
+# ============================================
+
+install-data-hook:
+	@set -e; \
+	$(install_file_verifier); \
+	for lc_file in $(dist_pkgdata_DATA); do \
+	  lc_source="$$lc_file"; \
+	  if test ! -f "$$lc_source"; then lc_source='$(srcdir)/'"$$lc_file"; fi; \
+	  lc_dest='$(DESTDIR)$(pkgdatadir)/'"$${lc_file##*/}"; \
+	  verify_installed_file "$$lc_source" "$$lc_dest" 644; \
+	done; \
+	for lc_file in $(dist_man1_MANS) $(dist_man7_MANS); do \
+	  case "$$lc_file" in \
+	    *.1) lc_dir='$(DESTDIR)$(man1dir)'; lc_ext=1 ;; \
+	    *.7) lc_dir='$(DESTDIR)$(man7dir)'; lc_ext=7 ;; \
+	  esac; \
+	  lc_source="$$lc_file"; \
+	  if test ! -f "$$lc_source"; then lc_source='$(srcdir)/'"$$lc_file"; fi; \
+	  lc_stem=$${lc_file##*/}; \
+	  lc_stem=$${lc_stem%.*}; \
+	  lc_name=$$(printf '%s\n' "$$lc_stem" | sed '$(transform)'); \
+	  lc_dest="$$lc_dir/$$lc_name.$$lc_ext"; \
+	  verify_installed_file "$$lc_source" "$$lc_dest" 644; \
+	done
 
 
 # ============================================
