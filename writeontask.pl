@@ -68,7 +68,8 @@ GetOptions(
 $comdir = shift(@ARGV);
 $soundfile = shift @ARGV;
 
-my $tot_time = $headstart;
+my $tot_time = $headstart;      # Total of unpaused time
+my $actu_tot_time = $headstart; # Total of ALL time
 
 $maxbehind > 0 or die "--max must be a positive integer\n";
 $wordspermin >= 0 or die "--wpm must be a non-negative number\n";
@@ -147,6 +148,7 @@ sub alg_gendaround {
   my $lc_now;
   my $lc_elps;
   my $lc_true_total;
+  my $lc_fl_true_total;
   #my $lc_wordgoal;
   #my $lc_wordnow;
   my $lc_min_ahd;
@@ -159,10 +161,12 @@ sub alg_gendaround {
   $actugoal = $wordgoal + ( $wordspermin * $lc_elps / 60 );
   $curncount = word_count(@fileset);
   $lc_true_total = ( $tot_time + $lc_elps );
+  $lc_fl_true_total = ( $actu_tot_time + $lc_elps );
   
   if ( $lc_elps > 30.5 )
   {
     $tot_time += $lc_elps;
+    $actu_tot_time += $lc_elps;
     $attime = $lc_now;
     $wordgoal = $actugoal;
   }
@@ -182,6 +186,7 @@ sub alg_gendaround {
     
     print ' VOLUME: ' . $lc2_loudy;
     print ' ' . secs_to_hms($lc_true_total);
+    print '/' . secs_to_hms($lc_fl_true_total);
     
     print " :\n";
     
@@ -197,6 +202,7 @@ sub alg_gendaround {
   print make_decimal(( $curncount - $actugoal )) . ' WAh: ';
   print '[' . $curncount . ' @ ' . $wordspermin . 'wpm] ';
   print ' ' . secs_to_hms($lc_true_total);
+  print '/' . secs_to_hms($lc_fl_true_total);
 
   if ( $wordspermin > 0 )
   {
@@ -544,6 +550,7 @@ sub frc_make_criogenum {
     'pause_on' => $pause_on,
     'pause_at' => $pause_at, # TSTMP
     'tot_time' => $tot_time,
+    'actu_tot_time' => $actu_tot_time,
     'fileset' => [@fileset],
     'wordspermin' => $wordspermin,
     'wordgoal' => $wordgoal,
@@ -626,6 +633,7 @@ sub thaw_criogenum {
   $pause_on = $lc_jdata->{'pause_on'};
   $pause_at = $lc_jdata->{'pause_at'};
   $tot_time = $lc_jdata->{'tot_time'};
+  $actu_tot_time = $lc_jdata->{'actu_tot_time'};
   $wordspermin = $lc_jdata->{'wordspermin'};
   $wordgoal = $lc_jdata->{'wordgoal'};
   $attime = $lc_jdata->{'attime'};
@@ -773,6 +781,7 @@ sub ford_pause {
   if ( $lc_elps < 0.5 ) { return; }
   
   $attime = int( $attime + $lc_elps + 0.2 );
+  $actu_tot_time = int( $actu_tot_time + $lc_elps + 0.2 );
   $pause_at = $lc_now;
 }
 
